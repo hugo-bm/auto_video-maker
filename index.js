@@ -4,7 +4,10 @@ const app = express();
 const handlebars = require('express-handlebars');
 const sesion = require('express-session');
 const bodyParser = require('body-parser');
-
+const content = require('./modules/cotent');
+const robot={
+    text: require('./robots/text')
+}
 //Inicializando
  app.engine('handlebars', handlebars({defaultLayout: 'main'}));
  app.set('view engine','handlebars');
@@ -22,8 +25,7 @@ app.use((req,res,next)=>{
 //rotas pricipais
 app.get('/',(req,res)=>{
     res.render('index');
-})
-const termSearch = null;
+});
 app.post('/start',(req,res)=>{    
     const termSearch = req.body.inputSearch;
     const prefix = req.body.inputSelectPrefix
@@ -32,19 +34,22 @@ app.post('/start',(req,res)=>{
     res.redirect('/');
 })
 
-function start(term,prefix){
-    const content = {}
+async function start(term,prefix){
+    
     //Aramazenado termo de busca
-    content.searchTerm = askAndReturnSearchTerm();
+   
+    content.searchTerms = askAndReturnSearchTerm();
     content.prefix = askAndReturnPrefix();
-    function askAndReturnSearchTerm(){
+    await  robot.text(content);
+     function askAndReturnSearchTerm(){
         return term;
     }
-    function askAndReturnPrefix(){
+     function askAndReturnPrefix(){
         const selectedPrefix = prefix;
         return selectedPrefix;
     }
-    console.log(content);
+    
+    console.log(content)
     
 }
 
