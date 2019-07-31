@@ -4,7 +4,7 @@ const app = express();
 const handlebars = require('express-handlebars');
 const sesion = require('express-session');
 const bodyParser = require('body-parser');
-const content = require('./modules/cotent');
+const content = require('./modules/content');
 const robot={
     text: require('./robots/text')
 }
@@ -28,18 +28,19 @@ app.get('/',(req,res)=>{
 });
 app.post('/start',(req,res)=>{    
     const termSearch = req.body.inputSearch;
-    const prefix = req.body.inputSelectPrefix
-    
-    start(termSearch,prefix);
+    const prefix = req.body.inputSelectPrefix;
+    const lang = req.body.inputLanguage;
+    start(termSearch,prefix,lang);
     res.redirect('/');
 })
 
-async function start(term,prefix){
+async function start(term,prefix,lang){
     
     //Aramazenado termo de busca
    
     content.searchTerms = askAndReturnSearchTerm();
     content.prefix = askAndReturnPrefix();
+    content.lang = lang;    
     await  robot.text(content);
      function askAndReturnSearchTerm(){
         return term;
@@ -49,7 +50,7 @@ async function start(term,prefix){
         return selectedPrefix;
     }
     
-    console.log(content)
+    console.log(JSON.stringify(content,null, 4));
     
 }
 

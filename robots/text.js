@@ -2,20 +2,32 @@
 const algorithmia = require('algorithmia');
 // Api key
 const algorithmiaApiKey = require('../credentials/algorithmia.json').apiKey
-
+const watsonNluApiKey = require('../credentials/watson-nlu.json').apikey
+const NaturalLanguageUnderstandingV1 = require('ibm-watson/natural-language-understanding/v1.js');
+ 
+const nlu = new NaturalLanguageUnderstandingV1({
+  iam_apikey: watsonNluApiKey,
+  version: '2018-04-05',
+  url: 'https://gateway.watsonplatform.net/natural-language-understanding/api/'
+});
 const sentenceBondaryDetection = require('sbd');
+
 
 async function robot(content){
     await fecthContentForwWikipedia(content)
     sanitizeContent(content)
     breakContentIntoSetences(content)
-
-
+    limitMaximumSentences(content)
+    await fetchKeywordsOfAllSentences(content)
+    
    async function fecthContentForwWikipedia(content){
         const algorithmiaAuthenticated = algorithmia(algorithmiaApiKey)
-        const wikipediaAlgorithm = algorithmiaAuthenticated.algo('web/WikipediaParser/0.1.2')
-        const wikipediaResponde = await wikipediaAlgorithm.pipe(content.searchTerms)
-        const wikipediaContent =  wikipediaResponde.get();        
+        const wikipediaAlgorithm = algorithmiaAuthenticated.algo('web/WikipediaParser/0.1.2')      
+        const wikipediaResponse = await wikipediaAlgorithm.pipe({
+            "articleName": content.searchTerms,
+            "lang": content.lang
+          })
+        const wikipediaContent =  wikipediaResponse.get();        
         content.sourceContentOriginal = wikipediaContent.content
     }
     function sanitizeContent(content){// Iniciando limpeza do texto
@@ -41,13 +53,52 @@ async function robot(content){
         return text.replace(/\((?:\([^()]*\)|[^()])*\)/gm, '').replace(/  /g,' ')
        }
     }
+    // Separando o texto em sentenças
     function breakContentIntoSetences(content){
         const sentences = sentenceBondaryDetection.sentences(content.sourceContentSanitized);
         sentences.forEach((sentence)=>{
             content.sentences.push({
-                text: sentence,
+                text: sentence ,
                 keywords: [],
-                images: []
+                images: []              
+            })
+        })
+    }
+    // limitando o número de sentenças
+    function limitMaximumSentences(content){       
+        content.sentences = content.sentences.slice(0,content.maximumSentences)
+        console.log(content)
+    }
+   
+    //Pegandos as Keywords de todas as sentenças
+    async function fetchKeywordsOfAllSentences(content) {
+              
+    console.log('> [text-robot] Starting to fetch keywords from Watson')
+
+    for (let sentence of content.sentences) {
+      console.log(`> [text-robot] Sentence: "${sentence.text}"`)
+
+      sentence.keywords = await fetchWatsonAndReturnKeywords(sentence.text)
+
+      console.log(`> [text-robot] Keywords: ${sentence.keywords.join(', ')}\n`)
+    }
+  }
+    async function fetchWatsonAndReturnKeywords(sentence){
+        return new Promise((resolve,reject)=>{
+            nlu.analyze({
+                text: sentence,
+                features: {
+                    keywords: {}
+                }
+            }, (err, response)=>{
+                   if (err) {
+                    reject(err)
+                    return
+                   } 
+                   const keywords = response.keywords.map((keyword)=>{
+                       return keyword.text
+                   })
+                resolve(keywords)
             })
         })
     }
