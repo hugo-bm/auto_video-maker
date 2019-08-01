@@ -11,18 +11,21 @@ const nlu = new NaturalLanguageUnderstandingV1({
   url: 'https://gateway.watsonplatform.net/natural-language-understanding/api/'
 });
 const sentenceBondaryDetection = require('sbd');
-
-
-async function robot(content){
+//chamando o arquivo salvo por state
+const state = require('./state')
+ 
+async function robot(){
+    let content = state.load();    
     await fecthContentForwWikipedia(content)
     sanitizeContent(content)
     breakContentIntoSetences(content)
     limitMaximumSentences(content)
     await fetchKeywordsOfAllSentences(content)
-    
+    state.save(content)
    async function fecthContentForwWikipedia(content){
         const algorithmiaAuthenticated = algorithmia(algorithmiaApiKey)
         const wikipediaAlgorithm = algorithmiaAuthenticated.algo('web/WikipediaParser/0.1.2')      
+       
         const wikipediaResponse = await wikipediaAlgorithm.pipe({
             "articleName": content.searchTerms,
             "lang": content.lang
@@ -32,10 +35,13 @@ async function robot(content){
     }
     function sanitizeContent(content){// Iniciando limpeza do texto
         // declarando funções
+       
         const whithoutBlankLinesAndMarkdown = removeBlankLinesAndMarkdown(content.sourceContentOriginal)
         const whithoutDatesInParenteses = removeDatesInParenteses(whithoutBlankLinesAndMarkdown)
+        
         // Salvando o conteudo limpo
         content.sourceContentSanitized = whithoutDatesInParenteses
+        
         // funções
 
        function removeBlankLinesAndMarkdown(text){
@@ -54,7 +60,7 @@ async function robot(content){
        }
     }
     // Separando o texto em sentenças
-    function breakContentIntoSetences(content){
+    function breakContentIntoSetences(content){ 
         const sentences = sentenceBondaryDetection.sentences(content.sourceContentSanitized);
         sentences.forEach((sentence)=>{
             content.sentences.push({
@@ -67,7 +73,7 @@ async function robot(content){
     // limitando o número de sentenças
     function limitMaximumSentences(content){       
         content.sentences = content.sentences.slice(0,content.maximumSentences)
-        console.log(content)
+        
     }
    
     //Pegandos as Keywords de todas as sentenças
