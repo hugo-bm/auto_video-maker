@@ -4,10 +4,9 @@ const app = express();
 const handlebars = require('express-handlebars');
 const sesion = require('express-session');
 const bodyParser = require('body-parser');
-const content = require('./modules/content');
-const robot={
-    text: require('./robots/text')
-}
+const input = require('./robots/input');
+const state = require('./robots/state')
+
 //Inicializando
  app.engine('handlebars', handlebars({defaultLayout: 'main'}));
  app.set('view engine','handlebars');
@@ -30,29 +29,13 @@ app.post('/start',(req,res)=>{
     const termSearch = req.body.inputSearch;
     const prefix = req.body.inputSelectPrefix;
     const lang = req.body.inputLanguage;
-    start(termSearch,prefix,lang);
+    input(termSearch,prefix,lang);
+    
+    
     res.redirect('/');
 })
 
-async function start(term,prefix,lang){
-    
-    //Aramazenado termo de busca
-   
-    content.searchTerms = askAndReturnSearchTerm();
-    content.prefix = askAndReturnPrefix();
-    content.lang = lang;    
-    await  robot.text(content);
-     function askAndReturnSearchTerm(){
-        return term;
-    }
-     function askAndReturnPrefix(){
-        const selectedPrefix = prefix;
-        return selectedPrefix;
-    }
-    
-    console.log(JSON.stringify(content,null, 4));
-    
-}
+
 
 
 const PORT = process.env.PORT || 1234;
