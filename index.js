@@ -5,7 +5,7 @@ const handlebars = require('express-handlebars');
 const sesion = require('express-session');
 const bodyParser = require('body-parser');
 const input = require('./robots/input');
-const state = require('./robots/state')
+
 
 //Inicializando
  app.engine('handlebars', handlebars({defaultLayout: 'main'}));
